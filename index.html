@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Natak Audio & Video Instant Play Panel</title>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Hidden Media Elements -->
+  <audio id="mainAudio" preload="auto"></audio>
+
+  <!-- Master Top Navigation Bar -->
+  <header class="app-header">
+    <div class="brand-section">
+      <div class="brand-badge">🎭</div>
+      <div class="brand-titles">
+        <h1>NATAK STAGE SOUNDBOARD</h1>
+        <p>Instant 1-Click Audio & Video Controller</p>
+      </div>
+    </div>
+
+    <!-- Active Status Pill -->
+    <div class="header-status">
+      <div id="headerStatusIndicator" class="status-indicator"></div>
+      <span id="headerStatusText">STANDBY</span>
+    </div>
+
+    <!-- Master Actions -->
+    <div class="master-actions">
+      <!-- Panic Button -->
+      <button id="panicBtn" class="btn-panic" title="Emergency Stop All Sound & Video (ESC)">
+        <i class="fas fa-hand-paper"></i> STOP ALL (ESC)
+      </button>
+
+      <!-- Smooth Fade Out Button -->
+      <button id="fadeBtn" class="btn-secondary" title="Smooth 2s Fade Out (F)">
+        <i class="fas fa-volume-down"></i> FADE OUT (F)
+      </button>
+
+      <!-- Loop Toggle -->
+      <button id="loopBtn" class="btn-secondary" title="Toggle Loop Mode (L)">
+        <i class="fas fa-redo-alt"></i> LOOP
+      </button>
+
+      <!-- Stage Window Pop-out -->
+      <button id="btnPopout" class="btn-secondary" title="Open Stage Video Projection Window on External Screen / TV">
+        <i class="fas fa-external-link-alt"></i> PROJECTOR SCREEN
+      </button>
+
+      <!-- Refresh / Re-scan Library -->
+      <button id="refreshLibraryBtn" class="btn-secondary" title="Re-scan Natak Audio folder for newly added files">
+        <i id="refreshIcon" class="fas fa-sync-alt"></i> REFRESH
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Application Body -->
+  <main class="app-container">
+
+    <!-- Left Side: Soundboard Pads & Toolbar -->
+    <section class="board-section">
+      
+      <!-- Toolbar: Search, Filters, View Modes -->
+      <div class="toolbar">
+        <!-- Live Instant Search -->
+        <div class="search-box">
+          <i class="fas fa-search search-icon"></i>
+          <input type="text" id="searchInput" class="search-input" placeholder="Search track name, cue number (e.g. 10, मुखिया, Dandiya)... [/]">
+          <button id="searchClear" class="search-clear"><i class="fas fa-times"></i></button>
+        </div>
+
+        <!-- Category Filters -->
+        <div class="filter-group">
+          <button class="filter-btn active" data-filter="all">
+            <i class="fas fa-layer-group"></i> All (<span id="tracksCountBadge">36</span>)
+          </button>
+          <button class="filter-btn" data-filter="audio">
+            <i class="fas fa-music"></i> Audio (28)
+          </button>
+          <button class="filter-btn" data-filter="video">
+            <i class="fas fa-film"></i> Video (8)
+          </button>
+          <button class="filter-btn" data-filter="starred">
+            <i class="fas fa-star" style="color: #f59e0b;"></i> Starred
+          </button>
+        </div>
+
+        <!-- Add Media & View Mode Switcher -->
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <input type="file" id="mediaFileInput" accept="audio/*,video/*" multiple style="display: none;">
+          <button id="addMediaBtn" class="btn-secondary" style="padding: 7px 12px; font-size: 13px;" title="Import additional audio or video files into panel">
+            <i class="fas fa-plus-circle" style="color: var(--accent-emerald);"></i> + Add File
+          </button>
+
+          <div class="view-toggle">
+            <button id="viewGridBtn" class="view-btn active" title="Soundboard Grid View">
+              <i class="fas fa-th-large"></i> Grid
+            </button>
+            <button id="viewListBtn" class="view-btn" title="Sequential Cue List View">
+              <i class="fas fa-list"></i> List
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tracks Soundboard Grid / List Container -->
+      <div id="tracksContainer" class="tracks-grid">
+        <!-- Dynamically populated by app.js -->
+      </div>
+
+    </section>
+
+    <!-- Right Side: Live Monitor & Transport Console -->
+    <aside class="sidebar-panel">
+
+      <!-- Video Screen & Stage Monitor -->
+      <div class="monitor-card">
+        <div class="card-title">
+          <span><i class="fas fa-tv"></i> Stage Video Screen</span>
+          <span style="font-size: 11px; opacity: 0.6;">16:9 PROJECTION</span>
+        </div>
+
+        <div class="video-container" id="videoWrapper">
+          <video id="mainVideo" playsinline preload="auto" style="display: none;"></video>
+          <div id="videoPlaceholder" class="video-overlay-placeholder">
+            <i class="fas fa-video-slash"></i>
+            <span>No Video Playing</span>
+            <small style="opacity: 0.7;">Click any MP4 track to project video</small>
+          </div>
+        </div>
+
+        <!-- Video Control Toolbar -->
+        <div class="video-actions">
+          <button id="btnFullscreen" class="btn-secondary" title="Fullscreen on this monitor">
+            <i class="fas fa-expand"></i> Fullscreen
+          </button>
+          <button id="btnPiP" class="btn-secondary" title="Picture-in-Picture Floating Window">
+            <i class="fas fa-clone"></i> Float (PiP)
+          </button>
+        </div>
+      </div>
+
+      <!-- Now Playing & Transport Card -->
+      <div class="monitor-card">
+        <div class="card-title">
+          <span><i class="fas fa-sliders-h"></i> Live Transport</span>
+          <!-- Audio Frequency Visualizer -->
+          <canvas id="visualizerCanvas" class="visualizer-canvas" width="120" height="30"></canvas>
+        </div>
+
+        <!-- Currently Active Cue Banner -->
+        <div class="now-playing-box">
+          <div class="now-playing-header">
+            <span id="nowPlayingCue" class="now-playing-cue">STANDBY</span>
+          </div>
+          <div id="nowPlayingTitle" class="now-playing-title">
+            Click any audio or video pad to play instantly
+          </div>
+
+          <!-- Progress Bar & Scrubber -->
+          <div class="progress-container">
+            <div id="scrubberBar" class="scrubber-bar">
+              <div id="scrubberFill" class="scrubber-fill"></div>
+            </div>
+            <div class="time-row">
+              <span id="currentTimeLabel">00:00</span>
+              <span id="durationLabel">00:00</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Transport Buttons -->
+        <div class="transport-controls">
+          <button id="prevTrackBtn" class="transport-btn" title="Previous Cue (P / PageUp)">
+            <i class="fas fa-step-backward"></i>
+          </button>
+          <button id="rewindBtn" class="transport-btn" title="Rewind 5s (←)">
+            <i class="fas fa-backward"></i>
+          </button>
+          <button id="mainPlayPause" class="transport-btn btn-play-pause" title="Play / Pause (Spacebar)">
+            <i class="fas fa-play"></i>
+          </button>
+          <button id="forwardBtn" class="transport-btn" title="Forward 5s (→)">
+            <i class="fas fa-forward"></i>
+          </button>
+          <button id="nextTrackBtn" class="transport-btn" title="Next Cue (N / PageDown)">
+            <i class="fas fa-step-forward"></i>
+          </button>
+        </div>
+
+        <!-- Cue Auto-Advance & Speed -->
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px; font-size: 12px; color: var(--text-muted);">
+          <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+            <input type="checkbox" id="autoAdvanceToggle" style="accent-color: var(--accent-emerald);">
+            <span>Auto-Advance Cue</span>
+          </label>
+          <div style="display: flex; gap: 4px; align-items: center;">
+            <span style="font-size: 11px;"><i class="fas fa-tachometer-alt"></i></span>
+            <button class="preset-btn speed-btn" data-speed="0.8">0.8x</button>
+            <button class="preset-btn speed-btn active" data-speed="1.0">1.0x</button>
+            <button class="preset-btn speed-btn" data-speed="1.2">1.2x</button>
+            <button class="preset-btn speed-btn" data-speed="1.5">1.5x</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Master Volume Console -->
+      <div class="monitor-card volume-card">
+        <div class="card-title">
+          <span><i class="fas fa-volume-up"></i> Master Gain</span>
+          <span id="volumeLabel" style="color: var(--accent-blue); font-family: monospace;">100%</span>
+        </div>
+
+        <div class="volume-row">
+          <i id="volumeIcon" class="fas fa-volume-up volume-icon" title="Click to Mute (M)"></i>
+          <input type="range" id="volumeSlider" class="volume-slider" min="0" max="1" step="0.01" value="1">
+        </div>
+
+        <!-- Quick Volume Level Presets -->
+        <div class="volume-presets">
+          <button class="preset-btn" data-vol="0.25">25%</button>
+          <button class="preset-btn" data-vol="0.50">50%</button>
+          <button class="preset-btn" data-vol="0.75">75%</button>
+          <button class="preset-btn" data-vol="1.00">100%</button>
+        </div>
+      </div>
+
+    </aside>
+
+  </main>
+
+  <!-- Bottom Hotkey Cheatsheet for Live Stage Operators -->
+  <footer class="hotkeys-bar">
+    <div class="hotkey-item"><kbd>Space</kbd> Play / Pause</div>
+    <div class="hotkey-item"><kbd>Esc</kbd> STOP ALL</div>
+    <div class="hotkey-item"><kbd>F</kbd> Fade Out</div>
+    <div class="hotkey-item"><kbd>←</kbd> <kbd>→</kbd> Seek ±5s</div>
+    <div class="hotkey-item"><kbd>↑</kbd> <kbd>↓</kbd> Volume ±5%</div>
+    <div class="hotkey-item"><kbd>M</kbd> Mute</div>
+    <div class="hotkey-item"><kbd>L</kbd> Loop</div>
+    <div class="hotkey-item"><kbd>/</kbd> Quick Search</div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
+

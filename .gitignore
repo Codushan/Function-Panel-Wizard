@@ -1,0 +1,15 @@
+# Exclude all media inside Natak Audio
+Natak Audio/*
+!Natak Audio/.gitkeep
+
+# OS generated files
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+[Dd]esktop.ini
+.DS_Store
+
+# Logs and temp files
+*.log
+*.tmp
